@@ -1,6 +1,6 @@
 {
   "name": "site2video",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Generate a live-demo video of any website — horizontal or vertical, single or multi-page",
   "main": "index.js",
   "scripts": {

@@ -1,5 +1,10 @@
 import { spawn } from 'node:child_process';
-import ffmpegPath from 'ffmpeg-static';
+import { existsSync } from 'node:fs';
+import ffmpegStatic from 'ffmpeg-static';
+
+// ffmpeg-static's binary is fetched by its npm postinstall script, which some
+// package managers (e.g. Homebrew's sandboxed build) skip — fall back to PATH.
+const ffmpegPath = ffmpegStatic && existsSync(ffmpegStatic) ? ffmpegStatic : 'ffmpeg';
 
 export const QUALITY_CRF = { low: 28, medium: 23, high: 18 };
 
@@ -42,7 +47,13 @@ export async function compose({ input, output, orientation, style, fps = 30, qua
     const proc = spawn(ffmpegPath, args, { stdio: ['ignore', 'ignore', 'pipe'] });
     let stderr = '';
     proc.stderr.on('data', (chunk) => (stderr += chunk));
-    proc.on('error', reject);
+    proc.on('error', (err) =>
+      reject(
+        err.code === 'ENOENT'
+          ? new Error('ffmpeg not found — install it with `brew install ffmpeg` (or reinstall this package so ffmpeg-static can fetch its binary).')
+          : err,
+      ),
+    );
     proc.on('close', (code) => {
       if (code === 0) resolve();
       else reject(new Error(`ffmpeg exited with code ${code}:\n${stderr.slice(-2000)}`));
